@@ -68,3 +68,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Prevent layout shift when modals or select menus open */
+html {
+  scrollbar-gutter: stable;
+}

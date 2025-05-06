@@ -1,40 +1,20 @@
-import { useEffect, useState, useCallback } from "react";
-import { useToast } from "../hooks/use-toast"
+import { useEffect, useState } from "react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
+import { Card, CardContent } from "../components/ui/card";
+import { getAppointments } from "../data/api";
 import { Button } from "../components/ui/button";
-import RescheduleModal from "./RescheduleModal";
-import { Skeleton } from "../components/ui/skeleton";
-import {
-    AlertDialog,
-    AlertDialogTrigger,
-    AlertDialogContent,
-    AlertDialogHeader,
-    AlertDialogFooter,
-    AlertDialogTitle,
-    AlertDialogDescription,
-    AlertDialogCancel,
-    AlertDialogAction,
-} from "../components/ui/alert-dialog";
 
-
-export default function AdminAppointments() {
+export default function AdminAppointmentsDashboard() {
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
-    const { toast } = useToast();
 
     useEffect(() => {
         const fetchAppointments = async () => {
             try {
-                const res = await fetch("http://localhost:5000/api/appointments");
-                const data = await res.json();
-
-                if (data.success) {
-                    setAppointments(data.appointments);
-                } else {
-                    toast({ title: "Error", description: data.message, variant: "destructive" });
-                }
+                const data = await getAppointments(); // ✅ now uses api.js
+                setAppointments(data);
             } catch (err) {
-                toast({ title: "Error", description: "Could not load appointments", variant: "destructive" });
-                console.error(err);
+                console.error("Failed to load appointments", err);
             } finally {
                 setLoading(false);
             }
@@ -43,136 +23,54 @@ export default function AdminAppointments() {
         fetchAppointments();
     }, []);
 
+
     const now = new Date();
-    const upcoming = appointments.filter((a) => new Date(a.dateTime) > now);
-    const past = appointments.filter((a) => new Date(a.dateTime) <= now);
 
-    const cancelAppointment = useCallback(async (doctorId, eventId) => {
-        try {
-            const res = await fetch(`http://localhost:5000/api/cancel?doctorId=${doctorId}&eventId=${eventId}`);
-            const result = await res.json();
+    const upcoming = appointments.filter((a) => new Date(a.date) > now);
+    const past = appointments.filter((a) => new Date(a.date) <= now);
 
-            if (result.success) {
-                setAppointments((prev) => prev.filter((appt) => appt.eventId !== eventId));
-                toast({ title: "Cancelled", description: "Appointment successfully cancelled." });
-            } else {
-                toast({ title: "Failed", description: result.message, variant: "destructive" });
-            }
-        } catch (err) {
-            toast({ title: "Error", description: "Failed to cancel appointment.", variant: "destructive" });
-        }
-    }, []);
-
-    const handleReschedule = useCallback(async (appt, newDateTime) => {
-        try {
-            const res = await fetch(
-                `http://localhost:5000/api/reschedule?doctorId=${appt.doctorId}&eventId=${appt.eventId}&newDateTime=${encodeURIComponent(newDateTime)}`
-            );
-            const result = await res.json();
-
-            if (result.success) {
-                setAppointments((prev) =>
-                    prev.map((a) => (a.eventId === appt.eventId ? { ...a, dateTime: newDateTime } : a))
-                );
-                toast({
-                    title: "Rescheduled",
-                    description: `Appointment moved to ${new Date(newDateTime).toLocaleString()}`,
-                });
-            } else {
-                toast({ title: "Failed", description: result.message, variant: "destructive" });
-            }
-        } catch (err) {
-            toast({ title: "Error", description: "Could not reschedule appointment.", variant: "destructive" });
-        }
-    }, []);
+    const renderAppointmentCard = (a) => (
+        <Card key={a.appointmentId} className="mb-4">
+            <CardContent className="p-4 space-y-1">
+                <p><strong>Name:</strong> {a.name}</p>
+                <p><strong>Email:</strong> {a.email}</p>
+                <p><strong>Phone:</strong> {a.phone}</p>
+                <p><strong>Service:</strong> {a.service}</p>
+                <p><strong>Date:</strong> {new Date(a.date).toLocaleString()}</p>
+                <div className="flex gap-2 pt-2">
+                    <Button variant="outline" size="sm">Edit</Button>
+                    <Button variant="destructive" size="sm">Delete</Button>
+                </div>
+            </CardContent>
+        </Card>
+    );
 
     return (
-        <div className="p-6">
-            <h2 className="text-2xl font-bold mb-4">Admin Appointments</h2>
+        <div className="max-w-3xl mx-auto p-6">
+            <h1 className="text-3xl font-bold mb-6 text-center">Appointments</h1>
 
             {loading ? (
-                <ul className="space-y-4">
-                    {Array.from({ length: 3 }).map((_, i) => (
-                        <li key={i} className="p-4 border rounded-xl shadow-sm">
-                            <Skeleton className="h-4 w-1/2 mb-2" />
-                            <Skeleton className="h-4 w-1/3 mb-1" />
-                            <Skeleton className="h-4 w-1/4" />
-                        </li>
-                    ))}
-                </ul>
+                <p className="text-center">Loading...</p>
             ) : (
-                <>
-                    <h3 className="text-xl font-semibold mb-2">Upcoming</h3>
-                    {upcoming.length === 0 ? (
-                        <p>No upcoming appointments.</p>
-                    ) : (
-                        <ul className="space-y-4 mb-8">
-                            {upcoming.map((appt) => (
-                                <AppointmentItem
-                                    key={appt.eventId}
-                                    appointment={appt}
-                                    setAppointments={setAppointments}
-                                    onReschedule={handleReschedule}
-                                    onCancel={cancelAppointment}
-                                />
-                            ))}
-                        </ul>
-                    )}
+                <Tabs defaultValue="upcoming" className="w-full">
+                    <TabsList className="mb-4 flex justify-center">
+                        <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+                        <TabsTrigger value="past">Past</TabsTrigger>
+                    </TabsList>
 
-                    <h3 className="text-xl font-semibold mb-2">Past</h3>
-                    {past.length === 0 ? (
-                        <p>No past appointments.</p>
-                    ) : (
-                        <ul className="space-y-4">
-                            {past.map((appt) => (
-                                <AppointmentItem key={appt.eventId} appointment={appt} readOnly />
-                            ))}
-                        </ul>
-                    )}
-                </>
+                    <TabsContent value="upcoming">
+                        {upcoming.length > 0 ? upcoming.map(renderAppointmentCard) : (
+                            <p className="text-center">No upcoming appointments.</p>
+                        )}
+                    </TabsContent>
+
+                    <TabsContent value="past">
+                        {past.length > 0 ? past.map(renderAppointmentCard) : (
+                            <p className="text-center">No past appointments.</p>
+                        )}
+                    </TabsContent>
+                </Tabs>
             )}
         </div>
-    );
-}
-
-function AppointmentItem({ appointment, onReschedule, onCancel, readOnly = false }) {
-    return (
-        <li className="p-4 border rounded-xl shadow-sm flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-            <div>
-                <p className="font-medium text-lg">{appointment.patientName}</p>
-                <p className="text-sm text-gray-600">{new Date(appointment.dateTime).toLocaleString()}</p>
-                <p className="text-sm text-gray-500">{appointment.email}</p>
-            </div>
-
-            {!readOnly && (
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center">
-                    <RescheduleModal appointment={appointment} onReschedule={onReschedule} />
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive" className="w-full sm:w-auto">
-                                Cancel
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Cancel Appointment</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Are you sure you want to cancel this appointment? This action cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Go Back</AlertDialogCancel>
-                                <AlertDialogAction
-                                    onClick={() => onCancel(appointment.doctorId, appointment.eventId)}
-                                >
-                                    Yes, Cancel
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-
-                </div>
-            )}
-        </li>
     );
 }
