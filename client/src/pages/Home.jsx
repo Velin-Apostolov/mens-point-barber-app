@@ -12,8 +12,9 @@ import {
     SelectItem,
 } from "../components/ui/select";
 
-import { fetchFromScript } from "../data/api";
+import { fetchFromScript, getAppointments } from "../data/api";
 
+import { useToast } from "../hooks/use-toast";
 
 const generateHourlySlots = (date) => {
     const slots = [];
@@ -26,9 +27,12 @@ const generateHourlySlots = (date) => {
 };
 
 export default function Home() {
+    const { toast } = useToast();
     const [selectedDate, setSelectedDate] = useState(null);
     const [selectedSlot, setSelectedSlot] = useState(null);
+    const [slotsLoading, setSlotsLoading] = useState(true);
     const [availableSlots, setAvailableSlots] = useState([]);
+    const [reservedSlots, setReservedSlots] = useState([]);
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -45,6 +49,29 @@ export default function Home() {
         "Hair Wash + Style",
     ];
 
+    const loadAppointments = async () => {
+        setSlotsLoading(true);
+        try {
+            const appointments = await getAppointments();
+            setReservedSlots(appointments.map((a) => a.date));
+        } catch (err) {
+            console.error("Failed to load appointments", err);
+            toast({
+                title: 'Error',
+                description: 'Failed to load booked slots.',
+                variant: 'destructive',
+            })
+        } finally {
+            setSlotsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadAppointments();
+    }, []);
+
+
+    // Generate slots when date is selected
     useEffect(() => {
         if (selectedDate) {
             const slots = generateHourlySlots(selectedDate);
@@ -76,19 +103,31 @@ export default function Home() {
             });
 
             if (res.result === "success") {
-                alert("Appointment booked successfully!");
+                toast({
+                    title: 'Success',
+                    description: 'Appointment booked!',
+                })
                 setFormData({ name: "", email: "", phone: "", service: "" });
                 setSelectedDate(null);
                 setSelectedSlot(null);
+
+                await loadAppointments();
             } else {
-                alert("Failed to book. Try again.");
+                toast({
+                    title: 'Booking failed',
+                    description: 'Something went wrong. Try again.',
+                    variant: 'destructive',
+                })
             }
         } catch (err) {
             console.error(err);
-            alert("Something went wrong.");
+            toast({
+                title: "Error",
+                description: 'Could not submit appointment.',
+                variant: 'destructive',
+            })
         }
     };
-
 
     return (
         <div className="min-h-screen bg-gray-100 p-6 flex flex-col items-center">
@@ -130,9 +169,12 @@ export default function Home() {
 
                         <div>
                             <Label>Service</Label>
-                            <Select value={formData.service} onValueChange={(val) =>
-                                setFormData((prev) => ({ ...prev, service: val }))
-                            }>
+                            <Select
+                                value={formData.service}
+                                onValueChange={(val) =>
+                                    setFormData((prev) => ({ ...prev, service: val }))
+                                }
+                            >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select a service" />
                                 </SelectTrigger>
@@ -160,29 +202,55 @@ export default function Home() {
                         {selectedDate && (
                             <div>
                                 <Label>Select Time Slot</Label>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-                                    {availableSlots.map((slot, index) => (
-                                        <Button
-                                            key={index}
-                                            type="button"
-                                            variant={
-                                                selectedSlot?.toISOString() === slot.toISOString()
-                                                    ? "default"
-                                                    : "outline"
-                                            }
-                                            onClick={() => setSelectedSlot(slot)}
-                                        >
-                                            {slot.toLocaleTimeString([], {
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                            })}
-                                        </Button>
-                                    ))}
-                                </div>
+                                {slotsLoading ? (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                                        {Array.from({ length: 9 }).map((_, idx) => (
+                                            <div key={idx} className="h-10 bg-gray-200 rounded animate-pulse" />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                                        {availableSlots.map((slot, index) => {
+                                            const iso = slot.toISOString();
+                                            const isBooked = reservedSlots.includes(iso);
+
+                                            return (
+                                                <Button
+                                                    key={index}
+                                                    type="button"
+                                                    variant={
+                                                        selectedSlot?.toISOString() === iso
+                                                            ? "default"
+                                                            : isBooked
+                                                                ? "ghost"
+                                                                : "outline"
+                                                    }
+                                                    onClick={() => !isBooked && setSelectedSlot(slot)}
+                                                    disabled={isBooked}
+                                                    className={isBooked ? "cursor-not-allowed opacity-60" : ""}
+                                                    title={isBooked ? "This slot is already booked" : ""}
+                                                >
+                                                    {slot.toLocaleTimeString([], {
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                    })}
+                                                </Button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
                         )}
 
-                        <Button type="submit" disabled={!selectedSlot || !formData.service || !formData.email || !formData.name || !formData.email}>
+                        <Button
+                            type="submit"
+                            disabled={
+                                !selectedSlot ||
+                                !formData.service ||
+                                !formData.name ||
+                                !formData.email
+                            }
+                        >
                             Book Appointment
                         </Button>
                     </form>
