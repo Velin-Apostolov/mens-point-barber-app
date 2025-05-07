@@ -6,14 +6,18 @@ const resources = {
         translation: {
             gallery: "Gallery",
             about: "About Me",
-            home: "Home"
+            home: "Home",
+            upcoming: 'Upcoming',
+            past: 'Past',
         },
     },
     bg: {
         translation: {
             gallery: "Галерия",
             about: "За Мен",
-            home: "Начало"
+            home: "Начало",
+            upcoming: 'Предстоящи',
+            past: 'Предишни',
         },
     },
 };

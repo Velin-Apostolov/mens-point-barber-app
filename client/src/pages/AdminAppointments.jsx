@@ -3,10 +3,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs"
 import { Card, CardContent } from "../components/ui/card";
 import { getAppointments } from "../data/api";
 import { Button } from "../components/ui/button";
+import { useTranslation } from "react-i18next";
 
 export default function AdminAppointmentsDashboard() {
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { t } = useTranslation();
 
     useEffect(() => {
         const fetchAppointments = async () => {
@@ -54,8 +56,8 @@ export default function AdminAppointmentsDashboard() {
             ) : (
                 <Tabs defaultValue="upcoming" className="w-full">
                     <TabsList className="mb-4 flex justify-center">
-                        <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-                        <TabsTrigger value="past">Past</TabsTrigger>
+                        <TabsTrigger value="upcoming">{t('upcoming')}</TabsTrigger>
+                        <TabsTrigger value="past">{t('past')}</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="upcoming">
