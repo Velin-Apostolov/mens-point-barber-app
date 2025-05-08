@@ -16,6 +16,8 @@ import { fetchFromScript, getAppointments } from "../data/api";
 
 import { useToast } from "../hooks/use-toast";
 
+import { services } from "../data/services"
+
 const generateHourlySlots = (date) => {
     const slots = [];
     for (let h = 10; h < 19; h++) {
@@ -39,15 +41,6 @@ export default function Home() {
         phone: "",
         service: "",
     });
-
-    const services = [
-        "Fade",
-        "Fade + Beard Combo",
-        "Buzz Cut",
-        "Scissor Cut",
-        "Beard Trim",
-        "Hair Wash + Style",
-    ];
 
     const loadAppointments = async () => {
         setSlotsLoading(true);

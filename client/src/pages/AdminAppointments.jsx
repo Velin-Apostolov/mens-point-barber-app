@@ -20,6 +20,16 @@ import {
     AlertDialogAction,
 } from "../components/ui/alert-dialog";
 import { Loader2 } from "lucide-react";
+import { services } from "../data/services";
+import {
+    Select,
+    SelectTrigger,
+    SelectValue,
+    SelectContent,
+    SelectItem,
+} from "../components/ui/select";
+import { Calendar } from "../components/ui/calendar";
+import { safeInputValue } from "../lib/formHelper";
 
 export default function AdminAppointmentsDashboard() {
     const [appointments, setAppointments] = useState([]);
@@ -29,7 +39,6 @@ export default function AdminAppointmentsDashboard() {
     const { t } = useTranslation();
     const [deleteLoadingId, setDeleteLoadingId] = useState(null);
     const [editLoading, setEditLoading] = useState(false);
-
 
     useEffect(() => {
         fetchData();
@@ -52,17 +61,28 @@ export default function AdminAppointmentsDashboard() {
         try {
             const res = await fetchFromScript("delete", { appointmentId });
             if (res.result === "deleted") {
-                toast({ title: "Deleted", description: "Appointment removed." });
                 setAppointments((prev) => prev.filter((a) => a.appointmentId !== appointmentId));
+                toast({ title: "Deleted", description: "Appointment removed." });
             } else {
-                throw new Error();
+                toast({
+                    title: "Error",
+                    description: "Could not delete appointment.",
+                    variant: "destructive"
+                });
             }
         } catch (err) {
-            toast({ title: "Error", description: "Could not delete appointment.", variant: "destructive" });
+            toast({
+                title: "Error",
+                description: "Could not delete appointment.",
+                variant: "destructive"
+            });
         } finally {
-            setDeleteLoadingId(null);
+            setTimeout(() => {
+                setDeleteLoadingId(null);
+            }, 300);
         }
     };
+
 
     const handleEditSubmit = async (e) => {
         e.preventDefault();
@@ -71,8 +91,12 @@ export default function AdminAppointmentsDashboard() {
             const res = await fetchFromScript("edit", editing);
             if (res.result === "updated") {
                 toast({ title: "Updated", description: "Appointment updated." });
-                setEditing(null);
-                fetchData();
+                setAppointments((prev) =>
+                    prev.map((a) =>
+                        a.appointmentId === editing.appointmentId ? { ...a, ...editing } : a
+                    )
+                );
+                setEditing(null)
             } else {
                 toast({ title: "Error", description: "Appointment not found.", variant: "destructive" });
             }
@@ -90,85 +114,166 @@ export default function AdminAppointmentsDashboard() {
 
     const renderAppointmentCard = (a) => (
         <Card key={a.appointmentId} className="mb-4">
-            <CardContent className="p-4 space-y-1">
-                <p><strong>Name:</strong> {a.name}</p>
-                <p><strong>Email:</strong> {a.email}</p>
-                <p><strong>Phone:</strong> {a.phone}</p>
-                <p><strong>Service:</strong> {a.service}</p>
-                <p><strong>Date:</strong> {new Date(a.date).toLocaleString()}</p>
-                <div className="flex gap-2 pt-2">
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" onClick={() => setEditing(a)}>Edit</Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Edit Appointment</DialogTitle>
-                                <DialogDescription>
-                                    Update the appointment details below and save changes.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <form className={`space-y-4 ${editLoading ? "pointer-events-none opacity-50" : ""}`} onSubmit={handleEditSubmit}>
-                                <Input name="appointmentId" value={editing?.appointmentId} readOnly hidden />
-                                <div>
-                                    <Label>Name</Label>
-                                    <Input name="name" value={editing?.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} required />
-                                </div>
-                                <div>
-                                    <Label>Email</Label>
-                                    <Input name="email" value={editing?.email} onChange={(e) => setEditing({ ...editing, email: e.target.value })} required />
-                                </div>
-                                <div>
-                                    <Label>Phone</Label>
-                                    <Input name="phone" value={editing?.phone} onChange={(e) => setEditing({ ...editing, phone: e.target.value })} required />
-                                </div>
-                                <div>
-                                    <Label>Service</Label>
-                                    <Input name="service" value={editing?.service} onChange={(e) => setEditing({ ...editing, service: e.target.value })} required />
-                                </div>
-                                <div>
-                                    <Label>Date (ISO)</Label>
-                                    <Input name="dateTime" value={editing?.date} onChange={(e) => setEditing({ ...editing, date: e.target.value })} required />
-                                </div>
-                                <Button type="submit" disabled={editLoading}>{editLoading ? (
-                                    <span className="flex items-center gap-2">
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        Saving...
-                                    </span>
-                                ) : "Save"}</Button>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
+            <div className={deleteLoadingId === a.appointmentId ? "opacity-50 pointer-events-none" : ""}>
+                <CardContent className="p-4 space-y-1">
+                    <p><strong>Name:</strong> {a.name}</p>
+                    <p><strong>Email:</strong> {a.email}</p>
+                    <p><strong>Phone:</strong> {a.phone}</p>
+                    <p><strong>Service:</strong> {a.service}</p>
+                    <p><strong>Date:</strong> {new Date(a.date).toLocaleString()}</p>
+                    <div className="flex gap-2 pt-2">
+                        <Dialog open={!!editing} onOpenChange={(isOpen) => {
+                            if (!isOpen) setEditing(null);
+                        }}>
+                            <DialogTrigger asChild>
+                                <Button variant="outline" size="sm" onClick={() => setEditing(a)}>Edit</Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-h-[90vh] overflow-y-auto">
+                                <DialogHeader>
+                                    <DialogTitle>Edit Appointment</DialogTitle>
+                                    <DialogDescription>
+                                        Update the appointment details below and save changes.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <form
+                                    onSubmit={handleEditSubmit}
+                                    className={`space-y-4 ${editLoading ? "pointer-events-none opacity-50" : ""}`}
+                                >
+                                    <div>
+                                        <Label>Name</Label>
+                                        <Input
+                                            name="name"
+                                            value={safeInputValue(editing?.name)}
+                                            onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                                            required
+                                        />
+                                    </div>
 
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm">Delete</Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Appointment</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Are you sure you want to delete this appointment? This action cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                    disabled={deleteLoadingId === a.appointmentId}
-                                    onClick={() => handleDelete(a.appointmentId)}>
-                                    {deleteLoadingId === a.appointmentId ? (
-                                        <span className="flex items-center gap-2">
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                            Deleting...
-                                        </span>
-                                    ) : "Yes, Delete"}
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
-            </CardContent>
-        </Card>
+                                    <div>
+                                        <Label>Email</Label>
+                                        <Input
+                                            name="email"
+                                            value={safeInputValue(editing?.email)}
+                                            onChange={(e) => setEditing({ ...editing, email: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <Label>Phone</Label>
+                                        <Input
+                                            name="phone"
+                                            value={safeInputValue(editing?.phone)}
+                                            onChange={(e) => setEditing({ ...editing, phone: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <Label>Service</Label>
+                                        <Select
+                                            value={safeInputValue(editing?.service)}
+                                            onValueChange={(val) => setEditing({ ...editing, service: val })}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select a service" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {services.map((service, idx) => (
+                                                    <SelectItem key={idx} value={service}>
+                                                        {service}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div>
+                                        <Label>Date</Label>
+                                        <Calendar
+                                            mode="single"
+                                            selected={editing?.date ? new Date(editing.date) : undefined}
+                                            onSelect={(date) => {
+                                                if (!date) return;
+                                                const iso = new Date(date);
+                                                if (editing?.time) iso.setHours(editing.time, 0, 0, 0);
+                                                setEditing((prev) => ({ ...prev, date: iso.toISOString(), dateObj: date }));
+                                            }}
+                                            fromDate={new Date()}
+                                            className="border rounded-md mt-2"
+                                        />
+                                    </div>
+
+                                    {editing?.date && (
+                                        <div>
+                                            <Label>Time</Label>
+                                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-2">
+                                                {Array.from({ length: 9 }, (_, i) => i + 10).map((hour) => {
+                                                    const selected = new Date(editing.date).getHours() === hour;
+                                                    return (
+                                                        <Button
+                                                            key={hour}
+                                                            type="button"
+                                                            variant={selected ? "default" : "outline"}
+                                                            onClick={() => {
+                                                                const d = new Date(editing.date);
+                                                                d.setHours(hour, 0, 0, 0);
+                                                                setEditing({ ...editing, date: d.toISOString(), time: hour });
+                                                            }}
+                                                        >
+                                                            {`${hour}:00`}
+                                                        </Button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <Button type="submit" disabled={editLoading}>
+                                        {editLoading ? (
+                                            <span className="flex items-center gap-2">
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Saving...
+                                            </span>
+                                        ) : (
+                                            "Save"
+                                        )}
+                                    </Button>
+                                </form>
+
+                            </DialogContent>
+                        </Dialog>
+
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm">Delete</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Appointment</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Are you sure you want to delete this appointment? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        disabled={deleteLoadingId === a.appointmentId}
+                                        onClick={() => handleDelete(a.appointmentId)}>
+                                        {deleteLoadingId === a.appointmentId ? (
+                                            <span className="flex items-center gap-2">
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Deleting...
+                                            </span>
+                                        ) : "Yes, Delete"}
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                </CardContent>
+            </div >
+        </Card >
     );
 
     return (
