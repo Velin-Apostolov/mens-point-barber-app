@@ -84,6 +84,11 @@ export default function Home() {
         e.preventDefault();
 
         if (!selectedSlot || !formData.service) {
+            toast({
+                title: 'Warning',
+                description: 'Please select a service and a time slot.',
+                variant: 'warning'
+            })
             alert("Please select a service and a time slot.");
             return;
         }
