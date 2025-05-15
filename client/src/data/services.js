@@ -5,4 +5,5 @@ export const services = [
     "Scissor Cut",
     "Beard Trim",
     "Hair Wash + Style",
+    "Placeholder"
 ];
