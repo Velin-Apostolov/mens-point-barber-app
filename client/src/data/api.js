@@ -1,5 +1,7 @@
 const isLocalhost = window.location.hostname === "localhost";
 
+console.log(import.meta.env.VITE_API_URL)
+
 export const PROXY_BASE_URL = isLocalhost
     ? "http://localhost:3001/api"
     : import.meta.env.VITE_API_URL;
