@@ -1,8 +1,5 @@
 {
     "build": {
-        "env": {
-            "NODE_ENV": "production"
-        },
         "command": "cd server && npm install"
     },
     "start": {
