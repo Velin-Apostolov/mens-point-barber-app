@@ -51,6 +51,7 @@ export default function EditAppointmentModal({ appointment, onUpdated }) {
                 setReservedSlots(allAppointments.map((a) => a.date));
             } catch (err) {
                 console.error("Failed to load reserved slots");
+                throw new Error("Failed to load reserved slots")
             } finally {
                 setSlotsLoading(false);
             }

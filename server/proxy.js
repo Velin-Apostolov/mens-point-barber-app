@@ -4,8 +4,6 @@ const cors = require("cors");
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-console.log('test')
-
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz7qRLBuZM6arqhS83DUKdr02ZlAQRJYUmlD2YviJNvgwGAFyiArHXW6wkIG8DTOugM8g/exec";
 
 app.use(cors());
