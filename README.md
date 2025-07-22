@@ -1,3 +1,5 @@
+https://mens-point-barber-app-62nb.vercel.app
+
 A modern barber shop appointment booking system built with React, Tailwind CSS, and ShadCN. It allows clients to book appointments online and gives admins an intuitive dashboard to manage bookings.
 
 🌟 Features
@@ -5,7 +7,7 @@ A modern barber shop appointment booking system built with React, Tailwind CSS, 
 
 📅 Google Sheets backend for storing and managing bookings.
 
-🛡 Admin dashboard secured with Clerk authentication.
+🛡 Admin dashboard secured with Clerk authentication. Can be accessed by adding /admin at the end of the home page link. Username & pw - 'admin'
 
 🖋 Edit, reschedule, and cancel appointments in real time.
 
