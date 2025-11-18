@@ -46,7 +46,7 @@ export default function Home() {
         setSlotsLoading(true);
         try {
             const appointments = await getAppointments();
-            setReservedSlots(appointments.map((a) => a.date));
+            setReservedSlots(appointments?.map((a) => a.date));
         } catch (err) {
             console.error("Failed to load appointments", err);
             toast({
@@ -128,9 +128,9 @@ export default function Home() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 p-6 flex flex-col items-center">
+        <div className="min-h-screen bg-gray-100 p-6 flex flex-col items-center mt-10">
             <Card className="w-full max-w-2xl">
-                <CardContent className="p-6 space-y-6">
+                <CardContent className="p-6 space-y-6 mt-2">
                     <h2 className="text-3xl font-bold text-center">Book Your Appointment</h2>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>

@@ -20,6 +20,8 @@ app.get("/api/appointments", async (req, res) => {
     }
 });
 
+
+
 app.post("/api/appointments", async (req, res) => {
     try {
         const response = await fetch(GOOGLE_SCRIPT_URL, {

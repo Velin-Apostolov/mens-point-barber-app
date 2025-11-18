@@ -70,8 +70,8 @@ export default function AdminAppointmentsDashboard() {
     };
 
     const now = new Date();
-    const upcoming = appointments.filter((a) => new Date(a.date) > now);
-    const past = appointments.filter((a) => new Date(a.date) <= now);
+    const upcoming = appointments?.filter((a) => new Date(a.date) > now);
+    const past = appointments?.filter((a) => new Date(a.date) <= now);
 
     const renderAppointmentCard = (a) => {
         const isPast = new Date(a.date) >= new Date();
